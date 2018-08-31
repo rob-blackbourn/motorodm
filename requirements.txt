@@ -1,1 +1,2 @@
 motor==2.0.0
+graphene==2.1.3
