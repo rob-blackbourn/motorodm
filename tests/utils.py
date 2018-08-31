@@ -18,8 +18,8 @@ def AsyncMock(*args, **kwargs):
 def run_async(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        async def go():
-            await func(*args, **kwargs)
-        self = args[0]
-        self.io_loop.run_until_complete(go())
+        coro = asyncio.coroutine(func)
+        future = coro(*args, **kwargs)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(future)
     return wrapper
