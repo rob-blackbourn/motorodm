@@ -33,4 +33,4 @@ class ListField(Field):
     async def from_mongo(self, value, resolver=None):
         if value is None:
             return []
-        return [await self.item_field.from_mongo(item) for item in value]
+        return [await self.item_field.from_mongo(item, resolver) for item in value]
