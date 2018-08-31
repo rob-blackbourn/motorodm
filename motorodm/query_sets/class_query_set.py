@@ -7,7 +7,6 @@ class ClassQuerySet(object):
     def __init__(self, document_class, db):
         self.document_class = document_class
         self.db = db
-        self.id_field_name = document_class._db_name_map['_id']
 
     @property
     def collection(self):
@@ -52,5 +51,5 @@ class ClassQuerySet(object):
         data = [document.to_mongo() for document in documents]
         ret = await self.collection.insert_many(data)
         for id, document in zip(ret.inserted_ids, documents):
-            setattr(document, self.id_field_name, id)
+            document._identity = id
         return documents
