@@ -1,0 +1,36 @@
+
+from .field import Field
+
+
+class ListField(Field):
+
+    def __init__(self, item_field=None, *args, **kwargs):
+
+        if not isinstance(item_field, Field):
+            raise ValueError("The item_field for must be a Field")
+
+        super().__init__(*args, **kwargs)
+
+        self.item_field = item_field
+
+    def validate(self, value):
+        if value is not None:
+            if not isinstance(value, list):
+                return False
+
+            for item in value:
+                if not self.item_field.validate(item):
+                    return False
+
+        return super().validate(value)
+
+    def is_empty(self, value):
+        return value is None or len(value) == 0
+
+    def to_mongo(self, value):
+        return list(map(self.item_field.to_mongo, value))
+
+    def from_mongo(self, value):
+        if value is None:
+            return []
+        return list(map(self.item_field.from_mongo, value))
