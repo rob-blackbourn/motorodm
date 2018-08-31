@@ -23,13 +23,13 @@ class Document(metaclass=MetaDocument):
         return data
 
     @classmethod
-    def from_mongo(cls, dct):
+    async def from_mongo(cls, dct, resolver):
 
         kwargs = {}
         for db_name, value in dct.items():
             field_name = cls._db_name_map[db_name]
             field = cls._fields[field_name]
-            kwargs[field_name] = field.from_mongo(value)
+            kwargs[field_name] = await field.from_mongo(value, resolver)
 
         return cls(**kwargs)
 
@@ -46,6 +46,14 @@ class Document(metaclass=MetaDocument):
 
     def _make_clean(self):
         self._dirty_fields = set()
+
+    @property
+    def _identity(self):
+        return getattr(self, self._db_name_map['_id'], None)
+
+    @_identity.setter
+    def _identity(self, value):
+        return setattr(self, self._db_name_map['_id'], value)
 
     def __eq__(self, other):
         for name in self._fields.keys():

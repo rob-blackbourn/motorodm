@@ -30,7 +30,7 @@ class ListField(Field):
     def to_mongo(self, value):
         return list(map(self.item_field.to_mongo, value))
 
-    def from_mongo(self, value):
+    async def from_mongo(self, value, resolver=None):
         if value is None:
             return []
-        return list(map(self.item_field.from_mongo, value))
+        return [await self.item_field.from_mongo(item) for item in value]

@@ -1,9 +1,10 @@
+from asyncio import Future
 from pymongo import ASCENDING
 
 
 class Field:
 
-    def __init__(self, name=None, db_name=None, default=None, required=None, unique=None, sort_order=ASCENDING, before_set=None, after_get=None):
+    def __init__(self, name=None, db_name=None, default=None, required=False, unique=False, sort_order=ASCENDING, before_set=None, after_get=None):
         self.name = name
         self.db_name = db_name
         self.default = default
@@ -16,7 +17,7 @@ class Field:
     def to_mongo(self, value):
         return value
 
-    def from_mongo(self, value):
+    async def from_mongo(self, value, resolver=None):
         return value
 
     def is_empty(self, value):

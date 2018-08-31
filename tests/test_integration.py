@@ -1,7 +1,7 @@
 from unittest import TestCase
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
-from motorodm import StringField, ObjectIdField
+from motorodm import StringField, ObjectIdField, ReferenceField
 
 client = AsyncIOMotorClient()
 
@@ -32,3 +32,25 @@ class TestIntegration(TestCase):
             User(email='grum@bar.com', first_name='Bob', last_name='Thompson'),
         )
         self.assertEqual(len(users), 2)
+
+    @run_async
+    async def test_reference_field(self):
+
+        class User(Document):
+            name = StringField()
+
+        class Post(Document):
+            user = ReferenceField(User)
+            title = StringField()
+            body = StringField()
+
+        db = client.test_motorodm
+
+        await User.qs(db).drop()
+        await Post.qs(db).drop()
+
+        rob = await User(name='Rob').qs(db).save()
+        post = await Post(user=rob, title='My Post', body='Words of wisdom').qs(db).save()
+
+        post1 = await Post.qs(db).get(post._id)
+        self.assertEqual(post, post1)

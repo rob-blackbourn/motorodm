@@ -1,8 +1,9 @@
 class DocumentIterator:
 
-    def __init__(self, cursor, document_class):
+    def __init__(self, cursor, document_class, db):
         self.cursor = cursor
         self.document_class = document_class
+        self.db = db
 
     def __aiter__(self):
         return self
@@ -10,7 +11,7 @@ class DocumentIterator:
     async def __anext__(self):
         if await self.cursor.fetch_next():
             data = self.cursor.next_object()
-            return self.document_class.from_mongo(data)
+            return self.document_class.from_mongo(data, self.resolve)
         else:
             raise StopAsyncIteration
 
@@ -28,6 +29,9 @@ class DocumentIterator:
 
     async def to_list(self, length):
         return await self.cursor.to_list(length)
+
+    async def resolve(self, document_class, value):
+        document_class.qs(self.db).find_one({'_id', value})
 
     @property
     def alive(self):

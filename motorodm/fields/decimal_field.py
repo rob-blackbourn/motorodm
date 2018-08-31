@@ -37,6 +37,6 @@ class DecimalField(Field):
         value = decimal.Decimal(value)
         return str(value.quantize(self.precision, rounding=self.rounding))
 
-    def from_mongo(self, value):
+    async def from_mongo(self, value, resolver=None):
         value = decimal.Decimal(value)
         return value.quantize(self.precision, rounding=self.rounding)

@@ -13,6 +13,11 @@ class ClassQuerySet(object):
     def collection(self):
         return self.db[self.document_class.__collection__]
 
+    async def resolve(self, document_class, value):
+        qs = document_class.qs(self.db)
+        document = await qs.find_one(_id=value)
+        return document
+
     async def create(self, **kwargs):
         document = self.document_class(**kwargs)
         query_set = InstanceQuerySet(document, self.db)
@@ -25,10 +30,10 @@ class ClassQuerySet(object):
         result = await self.collection.find_one(kwargs)
         if not result:
             return None
-        return self.document_class.from_mongo(result)
+        return await self.document_class.from_mongo(result, self.resolve)
 
     def find(self, **kwargs):
-        return DocumentIterator(self.collection.find_one(kwargs), self.document_class)
+        return DocumentIterator(self.collection.find_one(kwargs), self.document_class, self.db)
 
     async def drop(self):
         await self.collection.drop()

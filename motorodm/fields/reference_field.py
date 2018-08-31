@@ -15,7 +15,7 @@ class ReferenceField(Field):
         return super().validate(value)
 
     def to_mongo(self, value):
-        return value._id
+        return value._identity
 
-    def from_mongo(self, value):
-        return value
+    async def from_mongo(self, value, resolver=None):
+        return await resolver(self.reference_document_type, value)
