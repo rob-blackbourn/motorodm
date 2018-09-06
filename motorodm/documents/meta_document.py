@@ -23,7 +23,7 @@ class MetaEmbeddedDocument(type):
             MetaDocument.add_field(dct, field_name, field)
 
         if '_id' not in dct['_db_name_map']:
-            cls.add_field(dct, '_id', ObjectIdField())
+            cls.add_field(dct, 'id', ObjectIdField(db_name='_id'))
 
         dct['_values'] = {}
         dct['_dirty_fields'] = set()
