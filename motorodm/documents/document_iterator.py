@@ -9,9 +9,9 @@ class DocumentIterator:
         return self
 
     async def __anext__(self):
-        if await self.cursor.fetch_next():
+        if await self.cursor.fetch_next:
             data = self.cursor.next_object()
-            return self.document_class.from_mongo(data, self.resolve)
+            return await self.document_class.from_mongo(data, self.resolve)
         else:
             raise StopAsyncIteration
 
@@ -28,7 +28,7 @@ class DocumentIterator:
         self.cursor.sort(key_or_list, direction)
 
     async def to_list(self, length):
-        return await self.cursor.to_list(length)
+        return [await self.document_class.from_mongo(item, self.resolve) for item in await self.cursor.to_list(length)]
 
     async def resolve(self, document_class, value):
         document_class.qs(self.db).find_one({'_id', value})

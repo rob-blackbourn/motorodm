@@ -32,7 +32,7 @@ class ClassQuerySet(object):
         return await self.document_class.from_mongo(result, self.resolve)
 
     def find(self, **kwargs):
-        return DocumentIterator(self.collection.find_one(kwargs), self.document_class, self.db)
+        return DocumentIterator(self.collection.find(kwargs), self.document_class, self.db)
 
     async def drop(self):
         await self.collection.drop()

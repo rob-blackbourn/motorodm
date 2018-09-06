@@ -3,13 +3,14 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from motorodm import StringField, ObjectIdField, ReferenceField, ListField
 
-client = AsyncIOMotorClient()
-
 from motorodm import Document
 from tests.utils import run_async
 
 
 class TestIntegration(unittest.TestCase):
+
+    def setUp(self):
+        self.client = AsyncIOMotorClient()
 
     @run_async
     async def test_smoke(self):
@@ -19,7 +20,7 @@ class TestIntegration(unittest.TestCase):
             first_name = StringField(db_name='firstName')
             last_name = StringField(db_name='lastName')
 
-        db = client.test_motorodm
+        db = self.client.test_motorodm
 
         await User.qs(db).ensure_indices()
         await User.qs(db).drop()
@@ -44,7 +45,7 @@ class TestIntegration(unittest.TestCase):
             title = StringField()
             body = StringField()
 
-        db = client.test_motorodm
+        db = self.client.test_motorodm
 
         await User.qs(db).drop()
         await Post.qs(db).drop()
@@ -64,7 +65,7 @@ class TestIntegration(unittest.TestCase):
         class Updaters(Document):
             users = ListField(ReferenceField(User))
 
-        db = client.test_motorodm
+        db = self.client.test_motorodm
 
         await User.qs(db).drop()
         await Updaters.qs(db).drop()

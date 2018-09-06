@@ -5,6 +5,7 @@ class EmbeddedDocumentMixin:
     _dirty_fields = {}
 
     def __init__(self, **kwargs):
+        self._values = {}
         for name, value in kwargs.items():
             if name in self._fields:
                 setattr(self, name, value)
