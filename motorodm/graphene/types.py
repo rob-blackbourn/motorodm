@@ -163,7 +163,7 @@ class MotorOdmObjectType(ObjectType):
 
     def resolve_id(self, info):
         # pylint: disable=no-member
-        return str(self.id)
+        return str(self._identity)
 
     # @classmethod
     # def get_connection(cls):
