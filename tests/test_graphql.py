@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from motorodm import Document, StringField
+from motorodm import Document, StringField, ObjectIdField
 import graphene
 from graphql.execution.executors.asyncio import AsyncioExecutor
 from motorodm.graphene import MotorOdmObjectType
@@ -19,9 +19,7 @@ class TestGraphQL(unittest.TestCase):
             first_name = StringField(db_name='firstName')
             last_name = StringField(db_name='lastName')
 
-        db = self.client.test_motorodm
-
-        async def create():
+        async def create(db):
             await UserModel.qs(db).ensure_indices()
             await UserModel.qs(db).drop()
 
@@ -32,10 +30,6 @@ class TestGraphQL(unittest.TestCase):
             class Meta:
                 model = UserModel
 
-            @staticmethod
-            async def create(args, context):
-                return await UserModel(**args).qs(db).save()
-
         class CreateUser(graphene.Mutation):
 
             Output = User
@@ -45,15 +39,15 @@ class TestGraphQL(unittest.TestCase):
                 first_name = graphene.String(required=True)
                 last_name = graphene.String(required=True)
 
-            async def mutate(self, *context, **kwargs):
-                user = await UserModel(**kwargs).qs(db).save()
+            async def mutate(self, info, **kwargs):
+                user = await UserModel(**kwargs).qs(info.context['db']).save()
                 return user
 
         class Query(graphene.ObjectType):
             users = graphene.List(User)
 
             async def resolve_users(self, info):
-                cursor = UserModel.qs(db).find()
+                cursor = UserModel.qs(info.context['db']).find()
                 # return await cursor.to_list(100)
                 return [user async for user in cursor]
 
@@ -65,6 +59,7 @@ class TestGraphQL(unittest.TestCase):
         query = '''
             query {
                 users {
+                    id,
                     firstName,
                     lastName
                 }
@@ -81,13 +76,14 @@ class TestGraphQL(unittest.TestCase):
             }
         '''
 
+        db = self.client.test_motorodm
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(create())
+        loop.run_until_complete(create(db))
         query_result = schema.execute(
-            query, executor=AsyncioExecutor(loop=loop))
+            query, context={'db': db}, executor=AsyncioExecutor(loop=loop))
         print(query_result)
         mutation_result = schema.execute(
-            mutation, executor=AsyncioExecutor(loop=loop))
+            mutation, context={'db': db}, executor=AsyncioExecutor(loop=loop))
         print(mutation_result)
 
 
