@@ -1,4 +1,4 @@
-from unittest import TestCase
+import unittest
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from motorodm import StringField, ObjectIdField, ReferenceField, ListField
@@ -6,10 +6,10 @@ from motorodm import StringField, ObjectIdField, ReferenceField, ListField
 client = AsyncIOMotorClient()
 
 from motorodm import Document
-from .utils import run_async
+from tests.utils import run_async
 
 
-class TestIntegration(TestCase):
+class TestIntegration(unittest.TestCase):
 
     @run_async
     async def test_smoke(self):
@@ -75,3 +75,7 @@ class TestIntegration(TestCase):
 
         updaters1 = await Updaters.qs(db).get(updaters._id)
         self.assertEqual(updaters, updaters1)
+
+
+if __name__ == '__main__':
+    unittest.main(exit=False)

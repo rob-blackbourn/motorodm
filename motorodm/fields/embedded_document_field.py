@@ -18,4 +18,4 @@ class EmbeddedDocumentField(Field):
         return self.embedded_document_type.to_mongo(value)
 
     async def from_mongo(self, value, resolver=None):
-        return self.embedded_document_type.from_mongo(value)
+        return await self.embedded_document_type.from_mongo(value, resolver)

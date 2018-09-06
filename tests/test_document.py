@@ -1,14 +1,14 @@
-from unittest import TestCase
+import unittest
 from asyncio import Future
 
-from motorodm import Document
-from motorodm import StringField, ListField, ReferenceField
+from motorodm import Document, EmbeddedDocument
+from motorodm import StringField, ListField, ReferenceField, EmbeddedDocumentField
 from bson import ObjectId
 
-from .utils import run_async
+from tests.utils import run_async
 
 
-class TestDocument(TestCase):
+class TestDocument(unittest.TestCase):
 
     @run_async
     async def test_smoke(self):
@@ -86,5 +86,31 @@ class TestDocument(TestCase):
             return value
 
         post2 = await Post.from_mongo(dct, resolve)
-        print('Hello!!!!')
         self.assertEqual(post, post2)
+
+    @run_async
+    async def test_embedded_document(self):
+
+        class Address(EmbeddedDocument):
+            street = StringField()
+            town = StringField()
+
+        class User(Document):
+            name = StringField()
+            address = EmbeddedDocumentField(Address)
+
+        user = User(name='Fred', address=Address(
+            street='1 Main Street', town='Atlantis'))
+
+        self.assertTrue(user.is_valid)
+        dct = user.to_mongo()
+
+        async def resolve(document_class, value):
+            return value
+
+        user2 = await User.from_mongo(dct, resolve)
+        self.assertEqual(user, user2)
+
+
+if __name__ == '__main__':
+    unittest.main(exit=False)

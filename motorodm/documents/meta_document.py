@@ -3,7 +3,7 @@ from ..fields import ObjectIdField
 from ..query_sets.query_set import QuerySet
 
 
-class MetaDocument(type):
+class MetaEmbeddedDocument(type):
 
     def __new__(cls, name, bases, dct):
 
@@ -27,14 +27,11 @@ class MetaDocument(type):
 
         dct['_values'] = {}
         dct['_dirty_fields'] = set()
-        dct['qs'] = QuerySet()
 
         if '__collection__' not in dct:
             dct['__collection__'] = name
 
-        klass = super().__new__(cls, name, bases, dct)
-
-        return klass
+        return super().__new__(cls, name, bases, dct)
 
     @classmethod
     def add_field(cls, dct, field_name, field):
@@ -49,3 +46,10 @@ class MetaDocument(type):
         dct['_db_name_map'][field.db_name] = field_name
         if field.unique:
             dct['_indices'].append(field_name)
+
+
+class MetaDocument(MetaEmbeddedDocument):
+
+    def __new__(cls, name, bases, dct):
+        dct['qs'] = QuerySet()
+        return super().__new__(cls, name, bases, dct)
