@@ -26,7 +26,7 @@ class TestIntegration(unittest.TestCase):
         await User.qs(db).drop()
 
         user = await User(email='rob.blackbourn@example.com', first_name='Rob', last_name='Blackbourn').qs(db).save()
-        self.assertTrue(user._id is not None)
+        self.assertTrue(user._identity is not None)
 
         users = await User.qs(db).insert_many(
             User(email='foo@bar.com', first_name='Fred', last_name='Jackson'),
@@ -53,7 +53,7 @@ class TestIntegration(unittest.TestCase):
         rob = await User(name='Rob').qs(db).save()
         post = await Post(user=rob, title='My Post', body='Words of wisdom').qs(db).save()
 
-        post1 = await Post.qs(db).get(post._id)
+        post1 = await Post.qs(db).get(post._identity)
         self.assertEqual(post, post1)
 
     @run_async
@@ -74,8 +74,32 @@ class TestIntegration(unittest.TestCase):
         tom = await User(name='Tom').qs(db).save()
         updaters = await Updaters(users=[rob, tom]).qs(db).save()
 
-        updaters1 = await Updaters.qs(db).get(updaters._id)
+        updaters1 = await Updaters.qs(db).get(updaters._identity)
         self.assertEqual(updaters, updaters1)
+
+    @run_async
+    async def test_find_many(self):
+
+        class User(Document):
+            name = StringField()
+
+        db = self.client.test_motorodm
+        await db.drop_collection(User.__collection__)
+
+        try:
+            await User.qs(db).ensure_indices()
+
+            await User.qs(db).create(name='Tom')
+            await User.qs(db).create(name='Dick')
+            await User.qs(db).create(name='Harry')
+
+            users = {user.name: user async for user in User.qs(db).find()}
+            self.assertEqual(3, len(users))
+            self.assertTrue('Tom' in users)
+            self.assertTrue('Dick' in users)
+            self.assertTrue('Harry' in users)
+        finally:
+            await db.drop_collection(User.__collection__)
 
 
 if __name__ == '__main__':
