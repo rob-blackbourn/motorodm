@@ -62,6 +62,8 @@ class EmbeddedDocumentMixin:
 
 class DocumentMixin(EmbeddedDocumentMixin):
 
+    __collection__ = None
+
     @classmethod
     def qs(self, db):
         raise Exception('This method is replaced by the metaclass')

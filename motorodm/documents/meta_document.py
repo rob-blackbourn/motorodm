@@ -28,9 +28,6 @@ class MetaEmbeddedDocument(type):
         dct['_values'] = {}
         dct['_dirty_fields'] = set()
 
-        if '__collection__' not in dct:
-            dct['__collection__'] = name
-
         return super().__new__(cls, name, bases, dct)
 
     @classmethod
@@ -52,4 +49,8 @@ class MetaDocument(MetaEmbeddedDocument):
 
     def __new__(cls, name, bases, dct):
         dct['qs'] = QuerySet()
+
+        if dct.get('__collection__', None) is None:
+            dct['__collection__'] = name
+
         return super().__new__(cls, name, bases, dct)
