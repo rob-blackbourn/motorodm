@@ -26,13 +26,22 @@ class ClassQuerySet(object):
         return await self.find_one(_id=id)
 
     async def find_one(self, **kwargs):
-        result = await self.collection.find_one(kwargs)
+        query = self._to_query(**kwargs)
+        result = await self.collection.find_one(query)
         if not result:
             return None
         return await self.document_class.from_mongo(result, self.resolve)
 
     def find(self, **kwargs):
-        return DocumentIterator(self.collection.find(kwargs), self.document_class, self.db)
+        query = self._to_query(**kwargs)
+        return DocumentIterator(self.collection.find(query), self.document_class, self.db)
+
+    def _to_query(self, **kwargs):
+        return {
+            self.document_class._fields[name].db_name: self.document_class._fields[name].to_mongo(
+                value)
+            for name, value in kwargs.items()
+        }
 
     async def drop(self):
         await self.collection.drop()
