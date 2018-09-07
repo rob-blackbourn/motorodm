@@ -5,6 +5,7 @@ import graphene
 from graphql.execution.executors.asyncio import AsyncioExecutor
 from motorodm.graphene import MotorOdmObjectType
 from motor.motor_asyncio import AsyncIOMotorClient
+from tests.utils import run_async
 
 
 class TestGraphQL(unittest.TestCase):
@@ -12,21 +13,22 @@ class TestGraphQL(unittest.TestCase):
     def setUp(self):
         self.client = AsyncIOMotorClient()
 
-    def test_smoke(self):
+    @run_async
+    async def test_smoke(self):
 
         class UserModel(Document):
+            __collection__ = 'user'
             email = StringField(required=True, unique=True)
             first_name = StringField(db_name='firstName')
             last_name = StringField(db_name='lastName')
 
-        async def create(db):
-            await UserModel.qs(db).drop()
-            await UserModel.qs(db).ensure_indices()
+        db = self.client.test_motorodm
 
-            rob = await UserModel(email='rob.blackbourn@example.com', first_name='Rob', last_name='Blackbourn').qs(db).save()
-            ann = await UserModel(email='ann.jones@example.com', first_name='Ann', last_name='Jones').qs(db).save()
+        await UserModel.qs(db).drop()
+        await UserModel.qs(db).ensure_indices()
 
-            return [rob, ann]
+        rob = await UserModel(email='rob.blackbourn@example.com', first_name='Rob', last_name='Blackbourn').qs(db).save()
+        ann = await UserModel(email='ann.jones@example.com', first_name='Ann', last_name='Jones').qs(db).save()
 
         class User(MotorOdmObjectType):
             class Meta:
@@ -47,20 +49,21 @@ class TestGraphQL(unittest.TestCase):
 
         class Query(graphene.ObjectType):
             users = graphene.List(User)
+            user = graphene.Field(
+                User, email=graphene.String(), id=graphene.ID())
 
             async def resolve_users(self, info, email=None):
                 cursor = UserModel.qs(info.context['db']).find()
                 # return await cursor.to_list(100)
                 return [user async for user in cursor]
 
+            async def resolve_user(self, info, **kwargs):
+                return await UserModel.qs(info.context['db']).find_one(**kwargs)
+
         class Mutation(graphene.ObjectType):
             create_user = CreateUser.Field()
 
         schema = graphene.Schema(query=Query, mutation=Mutation)
-
-        db = self.client.test_motorodm
-        loop = asyncio.get_event_loop()
-        users = loop.run_until_complete(create(db))
 
         query = '''
             query {
@@ -72,13 +75,14 @@ class TestGraphQL(unittest.TestCase):
             }
         '''
 
-        query_result = schema.execute(
-            query, context={'db': db}, executor=AsyncioExecutor(loop=loop))
+        query_result = await schema.execute(
+            query, context={'db': db}, executor=AsyncioExecutor(), return_promise=True)
         print(query_result)
 
         mutation = '''
             mutation testMutation {
                 createUser(email: "john.doe@example.com", firstName: "John", lastName: "Doe") {
+                    id
                     email
                     firstName
                     lastName
@@ -86,13 +90,13 @@ class TestGraphQL(unittest.TestCase):
             }
         '''
 
-        mutation_result = schema.execute(
-            mutation, context={'db': db}, executor=AsyncioExecutor(loop=loop))
+        mutation_result = await schema.execute(
+            mutation, context={'db': db}, executor=AsyncioExecutor(), return_promise=True)
         print(mutation_result)
 
         query2 = '''
             query {
-                users(email: "rob.blackbourn@example.com") {
+                user(email: "rob.blackbourn@example.com") {
                     id
                     firstName
                     lastName
@@ -100,9 +104,37 @@ class TestGraphQL(unittest.TestCase):
             }
         '''
 
-        query2_result = schema.execute(
-            query2, context={'db': db}, executor=AsyncioExecutor(loop=loop))
+        query2_result = await schema.execute(
+            query2, context={'db': db}, executor=AsyncioExecutor(), return_promise=True)
         print(query2_result)
+
+        query3 = '''
+            query getUser($email: String!) {
+                user(email: $email) {
+                    id
+                    firstName
+                    lastName
+                }
+            }
+        '''
+
+        query3_result = await schema.execute(
+            query3, context={'db': db}, executor=AsyncioExecutor(), return_promise=True, variables={'email': "rob.blackbourn@example.com"})
+        print(query3_result)
+
+        query4 = '''
+            query getUser($id: ID!) {
+                user(id: $id) {
+                    id
+                    firstName
+                    lastName
+                }
+            }
+        '''
+
+        query4_result = await schema.execute(
+            query4, context={'db': db}, executor=AsyncioExecutor(), return_promise=True, variables={'id': ann.id})
+        print(query4_result)
 
 
 if __name__ == '__main__':
