@@ -45,7 +45,8 @@ class ClassQuerySet(object):
             )
             for field_name in self.document_class._indices
         ]
-        await self.collection.create_index(keys)
+        if len(keys) > 0:
+            await self.collection.create_index(keys)
 
     async def insert_many(self, *documents):
         data = [document.to_mongo() for document in documents]
