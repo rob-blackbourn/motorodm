@@ -15,7 +15,7 @@ class InstanceQuerySet(object):
             await self.collection.update_one({'_id': id}, {'$set': data})
         else:
             ret = await self.collection.insert_one(data)
-            self.document._identity = ret.inserted_id
+            self.document._identity = str(ret.inserted_id)
 
         self.document._make_clean()
 

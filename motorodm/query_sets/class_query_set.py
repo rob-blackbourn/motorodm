@@ -14,7 +14,7 @@ class ClassQuerySet(object):
 
     async def resolve(self, document_class, value):
         qs = document_class.qs(self.db)
-        document = await qs.find_one(_id=value)
+        document = await qs.get(value)
         return document
 
     async def create(self, **kwargs):
@@ -23,7 +23,8 @@ class ClassQuerySet(object):
         return await query_set.save()
 
     async def get(self, id):
-        return await self.find_one(_id=id)
+        kwargs = {self.document_class._db_name_map['_id']: id}
+        return await self.find_one(**kwargs)
 
     async def find_one(self, **kwargs):
         query = self._to_query(**kwargs)
@@ -61,5 +62,5 @@ class ClassQuerySet(object):
         data = [document.to_mongo() for document in documents]
         ret = await self.collection.insert_many(data)
         for id, document in zip(ret.inserted_ids, documents):
-            document._identity = id
+            document._identity = str(id)
         return documents

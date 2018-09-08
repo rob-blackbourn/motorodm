@@ -54,12 +54,12 @@ class TestDocument(unittest.TestCase):
         class User(Document):
             name = StringField()
 
-        id = ObjectId()
-        user = User(_id=id, name='Fred')
+        id = str(ObjectId())
+        user = User(id=id, name='Fred')
         self.assertTrue(user.is_valid)
         self.assertEqual(id, user._identity)
 
-        id2 = ObjectId()
+        id2 = str(ObjectId())
         user._identity = id2
         self.assertEqual(id2, user._identity)
 
@@ -74,8 +74,8 @@ class TestDocument(unittest.TestCase):
             title = StringField()
             body = StringField()
 
-        user = User(_id=ObjectId(), name='Rob')
-        post = Post(_id=ObjectId(), user=user,
+        user = User(id=str(ObjectId()), name='Rob')
+        post = Post(id=str(ObjectId()), user=user,
                     title='My Post', body='Words of wisdom')
 
         self.assertTrue(post.is_valid)
@@ -83,7 +83,7 @@ class TestDocument(unittest.TestCase):
         self.assertIn('user', dct)
 
         async def resolve(document_class, value):
-            return value
+            return user
 
         post2 = await Post.from_mongo(dct, resolve)
         self.assertEqual(post, post2)

@@ -1,5 +1,4 @@
 class EmbeddedDocumentMixin:
-    _root = True
     _fields = {}
     _db_name_map = {}
     _dirty_fields = {}
@@ -61,8 +60,6 @@ class EmbeddedDocumentMixin:
 
 
 class DocumentMixin(EmbeddedDocumentMixin):
-
-    __collection__ = None
 
     @classmethod
     def qs(self, db):

@@ -4,4 +4,5 @@ from .document_mixin import DocumentMixin
 
 class Document(DocumentMixin, metaclass=MetaDocument):
 
-    pass
+    __collection__ = None
+    _root = True

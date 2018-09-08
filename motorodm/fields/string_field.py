@@ -3,16 +3,16 @@ from .field import Field
 
 class StringField(Field):
 
-    def __init__(self, max_length=None, *args, **kwargs):
+    def __init__(self, regex=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.max_length = max_length
+        self.regex = regex
 
     def validate(self, value):
         if value is not None:
             if not isinstance(value, str):
                 return False
 
-            if self.max_length is not None and len(value) > self.max_length:
+            if self.regex and not self.regex.match(value):
                 return False
 
         return super().validate(value)
