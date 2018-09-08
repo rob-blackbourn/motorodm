@@ -29,6 +29,7 @@ class TestFields(unittest.TestCase):
             foo = motorodm.StringField()
             pass
 
+        # pylint: disable=no-member
         self.assertEqual(DocA.id.name, 'id', "Should create an 'id' field if not provided")
         self.assertEqual(DocA.id.db_name, '_id', "The 'id' field should have the db_name '_id'")
 
