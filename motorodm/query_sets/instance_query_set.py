@@ -11,7 +11,10 @@ class InstanceQuerySet(object):
     async def save(self):
         if self.document._identity:
             return await self.update()
+        else:
+            return await self.create()
 
+    async def create(self):
         self.document.before_create()
         data = self.document.to_mongo()
         ret = await self.collection.insert_one(data)
