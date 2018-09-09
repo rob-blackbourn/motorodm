@@ -27,8 +27,8 @@ class TestGraphQL(unittest.TestCase):
         await UserModel.qs(db).drop()
         await UserModel.qs(db).ensure_indices()
 
-        rob = await UserModel(email='rob.blackbourn@example.com', first_name='Rob', last_name='Blackbourn').qs(db).save()
-        ann = await UserModel(email='ann.jones@example.com', first_name='Ann', last_name='Jones').qs(db).save()
+        await UserModel(email='rob@example.com', first_name='Rob', last_name='Blackbourn').qs(db).save()
+        await UserModel(email='ann-marie@example.com', first_name='Ann-Marie', last_name='Dutton').qs(db).save()
 
         class User(MotorOdmObjectType):
             class Meta:
@@ -65,76 +65,97 @@ class TestGraphQL(unittest.TestCase):
 
         schema = graphene.Schema(query=Query, mutation=Mutation)
 
-        query = '''
-            query {
+        result = await schema.execute(
+            '''query {
                 users {
                     id,
                     firstName,
                     lastName
                 }
-            }
-        '''
+            }''',
+            context={'db': db},
+            executor=AsyncioExecutor(),
+            return_promise=True)
+        self.assertIsNone(result.errors, "The query should have no errors")
+        self.assertEqual(1, len(result.data), "The data should contain a single result set")
+        self.assertTrue('users' in result.data, "The data should contain the 'users' result set")
+        self.assertEqual(2, len(result.data['users']), "There should be two users in the result set")
 
-        query_result = await schema.execute(
-            query, context={'db': db}, executor=AsyncioExecutor(), return_promise=True)
-        print(query_result)
-
-        mutation = '''
-            mutation testMutation {
+        result = await schema.execute(
+            '''mutation testMutation {
                 createUser(email: "john.doe@example.com", firstName: "John", lastName: "Doe") {
                     id
                     email
                     firstName
                     lastName
                 }
-            }
-        '''
+            }''',
+            context={'db': db},
+            executor=AsyncioExecutor(),
+            return_promise=True)
+        self.assertIsNone(result.errors, "The mutation should have no errors")
+        self.assertEqual(1, len(result.data), "The mutation should have one result set")
+        self.assertTrue('createUser' in result.data, "The data should contain the result field")
+        self.assertEqual(4, len(result.data['createUser']), "The result set should have four fields")
+        self.assertEqual("john.doe@example.com", result.data['createUser']['email'], "The email should match the input data")
+        self.assertEqual('John', result.data['createUser']['firstName'], "The first name should match the input data")
+        self.assertEqual('Doe', result.data['createUser']['lastName'], "The last name should match the input data")
 
-        mutation_result = await schema.execute(
-            mutation, context={'db': db}, executor=AsyncioExecutor(), return_promise=True)
-        print(mutation_result)
+        id = result.data['createUser']['id']
+        email = result.data['createUser']['email']
 
-        query2 = '''
-            query {
-                user(email: "rob.blackbourn@example.com") {
+        result = await schema.execute(
+            '''query {
+                user(email: "rob@example.com") {
                     id
+                    email
                     firstName
                     lastName
                 }
-            }
-        '''
+            }''',
+            context={'db': db},
+            executor=AsyncioExecutor(),
+            return_promise=True)
+        self.assertIsNone(result.errors, "The query should have no errors")
+        self.assertEqual(1, len(result.data), "The query should return one result set")
+        self.assertEqual(4, len(result.data['user']), "The result set should have four fields")
+        self.assertTrue('id' in result.data['user'], "The 'id' field should be a returned field")
+        self.assertTrue('email' in result.data['user'], "The 'email' field should be a returned field")
+        self.assertTrue('firstName' in result.data['user'], "The 'firstName' field should be a returned field")
+        self.assertTrue('lastName' in result.data['user'], "The 'lastName' field should be a returned field")
 
-        query2_result = await schema.execute(
-            query2, context={'db': db}, executor=AsyncioExecutor(), return_promise=True)
-        print(query2_result)
-
-        query3 = '''
-            query getUser($email: String!) {
+        result = await schema.execute(
+            '''query getUser($email: String!) {
                 user(email: $email) {
                     id
                     firstName
                     lastName
                 }
-            }
-        '''
+            }''',
+            context={'db': db},
+            executor=AsyncioExecutor(),
+            return_promise=True,
+            variables={'email': email})
+        self.assertIsNone(result.errors, "A query with variables should return have no errors")
+        self.assertEqual(1, len(result.data), "The query should have one result")
+        self.assertEqual(3, len(result.data['user']), "The result should have three fields")
+        self.assertEqual(id, result.data['user']['id'], "The id should corresepond to the mutated user")
 
-        query3_result = await schema.execute(
-            query3, context={'db': db}, executor=AsyncioExecutor(), return_promise=True, variables={'email': "rob.blackbourn@example.com"})
-        print(query3_result)
-
-        query4 = '''
-            query getUser($id: ID!) {
+        result = await schema.execute(
+            '''query getUser($id: ID!) {
                 user(id: $id) {
-                    id
-                    firstName
-                    lastName
+                    email
                 }
-            }
-        '''
+            }''',
+            context={'db': db},
+            executor=AsyncioExecutor(),
+            return_promise=True,
+            variables={'id': id})
+        self.assertIsNone(result.errors, "A query with variables should have no errors")
+        self.assertEqual(1, len(result.data['user']), "A query with variables should return a single data value")
+        self.assertEqual(email, result.data['user']['email'], "The result should have the correct id")
 
-        query4_result = await schema.execute(
-            query4, context={'db': db}, executor=AsyncioExecutor(), return_promise=True, variables={'id': ann.id})
-        print(query4_result)
+        await UserModel.qs(db).drop()
 
 
 if __name__ == '__main__':
