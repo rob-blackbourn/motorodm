@@ -119,6 +119,14 @@ class TestDocument(unittest.TestCase):
         user2 = await User.from_mongo(dct, resolve)
         self.assertEqual(user, user2)
 
+    def test_before_set(self):
+
+        class User(Document):
+            name = StringField(before_set=lambda x: x.upper())
+
+        user = User(name='fred')
+        self.assertEqual(user.name, 'FRED')
+
 
 if __name__ == '__main__':
     unittest.main(exit=False)
