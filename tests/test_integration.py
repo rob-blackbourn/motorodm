@@ -1,9 +1,16 @@
 import unittest
 import asyncio
+from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
-from motorodm import StringField, ObjectIdField, ReferenceField, ListField
+from motorodm import (
+    Document,
+    StringField,
+    ObjectIdField,
+    ReferenceField,
+    ListField,
+    DateTimeField
+)
 
-from motorodm import Document
 from tests.utils import run_async
 
 
@@ -109,6 +116,34 @@ class TestIntegration(unittest.TestCase):
             self.assertTrue('Harry' in users)
         finally:
             await db.drop_collection(User.__collection__)
+
+    @run_async
+    async def test_before_hooks(self):
+
+        class User(Document):
+            name = StringField()
+            created = DateTimeField()
+            updated = DateTimeField()
+
+            def before_create(self):
+                self.created = self.updated = datetime.utcnow()
+
+            def before_update(self):
+                self.updated = datetime.utcnow()
+
+        db = self.client.test_motorodm
+        await db.drop_collection(User.__collection__)
+
+        user = await User(name='Rob').qs(db).save()
+        self.assertIsNotNone(user.created)
+        self.assertIsNotNone(user.updated)
+        self.assertEqual(user.created, user.updated)
+
+        user.name = 'Tom'
+        await user.qs(db).save()
+        self.assertGreater(user.updated, user.created)
+
+        await db.drop_collection(User.__collection__)
 
 
 if __name__ == '__main__':

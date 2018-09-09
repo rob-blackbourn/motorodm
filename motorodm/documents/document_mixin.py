@@ -64,3 +64,9 @@ class DocumentMixin(EmbeddedDocumentMixin):
     @classmethod
     def qs(self, db):
         raise Exception('This method is replaced by the metaclass')
+
+    def before_create(self):
+        pass
+
+    def before_update(self):
+        pass

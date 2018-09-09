@@ -1,8 +1,16 @@
 import unittest
 from asyncio import Future
+from datetime import datetime
 
-from motorodm import Document, EmbeddedDocument
-from motorodm import StringField, ListField, ReferenceField, EmbeddedDocumentField
+from motorodm import (
+    Document,
+    EmbeddedDocument,
+    StringField,
+    ListField,
+    ReferenceField,
+    EmbeddedDocumentField,
+    DateTimeField
+)
 from bson import ObjectId
 
 from tests.utils import run_async
