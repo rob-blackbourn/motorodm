@@ -1,9 +1,8 @@
+from functools import singledispatch
 import graphene
 from graphene.types.json import JSONString
 import motorodm
 from .fields import MotorOdmConnectionField
-
-from functools import singledispatch
 
 
 @singledispatch
@@ -39,10 +38,9 @@ def convert_field_to_float(field, registry=None):
     return graphene.Float(description=field.db_name, required=field.required)
 
 
-# @convert_motorodm_field.register(motorodm.fields.DictField)
-# @convert_motorodm_field.register(motorodm.fields.MapField)
-# def convert_dict_to_jsonstring(field, registry=None):
-#     return JSONString(description=field.db_name, required=field.required)
+@convert_motorodm_field.register(motorodm.fields.JsonField)
+def convert_dict_to_jsonstring(field, registry=None):
+    return graphene.JSONString(description=field.db_name, required=field.required)
 
 
 @convert_motorodm_field.register(motorodm.DateTimeField)
@@ -51,7 +49,6 @@ def convert_date_to_string(field, registry=None):
 
 
 @convert_motorodm_field.register(motorodm.ListField)
-# @convert_motorodm_field.register(motorodm.fields.EmbeddedDocumentListField)
 def convert_field_to_list(field, registry=None):
     # pylint: disable=assignment-from-no-return
     base_type = convert_motorodm_field(field.field, registry=registry)

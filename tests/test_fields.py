@@ -1,6 +1,7 @@
 import unittest
 import motorodm
 import re
+from tests.utils import run_async
 
 
 class TestFields(unittest.TestCase):
@@ -32,6 +33,21 @@ class TestFields(unittest.TestCase):
         # pylint: disable=no-member
         self.assertEqual(DocA.id.name, 'id', "Should create an 'id' field if not provided")
         self.assertEqual(DocA.id.db_name, '_id', "The 'id' field should have the db_name '_id'")
+
+    @run_async
+    async def test_json_field(self):
+
+        class MyDocument(motorodm.Document):
+            field = motorodm.JsonField()
+
+        doc = MyDocument(field={'one': 1, 'two': 2, 'three': [1, 2, 3]})
+        dct = doc.to_mongo()
+
+        async def resolve(document_class, value):
+            return value
+
+        doc1 = await MyDocument.from_mongo(dct, resolve)
+        self.assertEqual(doc, doc1)
 
 
 if __name__ == '__main__':
