@@ -20,7 +20,7 @@ class ClassQuerySet(object):
     async def create(self, **kwargs):
         document = self.document_class(**kwargs)
         query_set = InstanceQuerySet(document, self.db)
-        return await query_set.save()
+        return await query_set.create()
 
     async def get(self, id):
         kwargs = {self.document_class._db_name_map['_id']: id}
