@@ -61,7 +61,4 @@ class MetaDocument(MetaEmbeddedDocument):
 
         klass.qs = QuerySet()
 
-        if '__collection__' in dct:
-            klass.__collection__ = name
-
         return klass
