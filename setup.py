@@ -1,63 +1,42 @@
-import ast
-import codecs
-import os
-import sys
 from setuptools import setup, find_packages
+from codecs import open
+from os import path
 
+from motorodm import __version__ as version
 
-PY_VER = sys.version_info
-PACKAGE_NAME = 'motorodm'
+here = path.abspath(path.dirname(__file__))
 
-if not PY_VER >= (3, 5):
-    raise RuntimeError("motorodm doesn't support Python earlier than 3.5")
+# Get the long description from the README file
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
+# Load the requirements from the text file.
+with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
+    requirements = [x.strip() for x in f.readlines() if x.strip()]
 
-def read(f):
-    with codecs.open(os.path.join(os.path.dirname(__file__), f),
-                     encoding='utf-8') as ofile:
-        return ofile.read()
-
-
-class VersionFinder(ast.NodeVisitor):
-    def __init__(self):
-        self.version = None
-
-    def visit_Assign(self, node):
-        if not self.version:
-            if node.targets[0].id == '__version__':
-                self.version = node.value.s
-
-
-def read_version():
-    init_py = os.path.join(os.path.dirname(__file__),
-                           PACKAGE_NAME, '__init__.py')
-    finder = VersionFinder()
-    finder.visit(ast.parse(read(init_py)))
-    if finder.version is None:
-        msg = f'Cannot find version in {PACKAGE_NAME}/__init__.py'
-        raise RuntimeError(msg)
-    return finder.version
-
-
-install_requires = ['motor>=2.0.0', 'graphene>=2.1.3']
-
-setup(name=PACKAGE_NAME,
-      version=read_version(),
-      description=("An ODM for motor."),
-      lond_description=read('README.md'),
-      classifiers=[
-          'License :: OSI Approved :: Apache Software License',
-          'Intended Audience :: Developers',
-          'Programming Language :: Python',
-          'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.5',
-          'Programming Language :: Python :: 3.6',
-          'Framework :: AsyncIO',
-      ],
-      author="Rob Blackbourn",
-      author_email="rob.blackbourn@gmail.com",
-      url='https://github.com/rob-blackbourn/motorodm/',
-      license='Apache 2',
-      packages=find_packages(),
-      install_requires=install_requires,
-      include_package_data=True)
+setup(
+    name='motorodm',
+    version=version,
+    description=("An ODM for motor."),
+    lond_description=long_description,
+    long_description_content_type='text/markdown',
+    classifiers=[
+        'License :: OSI Approved :: Apache Software License',
+        'Intended Audience :: Developers',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Framework :: AsyncIO',
+    ],
+    author="Rob Blackbourn",
+    author_email="rob.blackbourn@gmail.com",
+    url='https://github.com/rob-blackbourn/motorodm/',
+    license='Apache 2',
+    keywords='motor odm mongo',
+    packages=find_packages(exclude=['tests', 'examples']),
+    python_requires='~=3.6',
+    install_requires=requirements,
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest', 'pytest-asyncio']
+)
