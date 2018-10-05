@@ -19,6 +19,15 @@ class EmbeddedDocumentMixin:
                 data[field.db_name] = value
         return data
 
+    def to_dict(self):
+        dct = {}
+        for name, field in self._fields.items():
+            value = field.to_mongo(
+                getattr(self, name, None))
+            if value is not None:
+                dct[name] = value
+        return dct
+
     @classmethod
     async def from_mongo(cls, dct, resolver):
 
