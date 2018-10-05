@@ -15,10 +15,18 @@ from motorodm import (
 from tests.utils import run_async
 
 
+def create_client():
+    return AsyncIOMotorClient(
+        username="root",
+        password="password",
+        authSource="admin"
+    )
+
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_smoke():
-    client = AsyncIOMotorClient()
+    client = create_client()
 
     class User(Document):
         email = StringField(required=True, unique=True)
@@ -46,7 +54,7 @@ async def test_smoke():
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_reference_field():
-    client = AsyncIOMotorClient()
+    client = create_client()
 
     class User(Document):
         name = StringField()
@@ -74,7 +82,7 @@ async def test_reference_field():
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_list_reference_field():
-    client = AsyncIOMotorClient()
+    client = create_client()
 
     class User(Document):
         name = StringField()
@@ -100,8 +108,101 @@ async def test_list_reference_field():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_get():
+    client = create_client()
+
+    class User(Document):
+        name = StringField()
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        await User.qs(db).ensure_indices()
+
+        tom = await User.qs(db).create(name='Tom')
+        dick = await User.qs(db).create(name='Dick')
+        harry = await User.qs(db).create(name='Harry')
+
+        tom1 = await User.qs(db).get(tom._identity)
+        assert tom == tom1
+        dick1 = await User.qs(db).get(dick._identity)
+        assert dick == dick1
+        harry1 = await User.qs(db).get(harry._identity)
+        assert harry == harry1
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_find_one():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(required=True, unique=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        await User.qs(db).ensure_indices()
+
+        tom = await User.qs(db).create(name='Tom')
+        dick = await User.qs(db).create(name='Dick')
+
+        tom1 = await User.qs(db).find_one(name={'$eq': tom.name})
+        assert tom == tom1
+        dick1 = await User.qs(db).find_one(**{User.name.name: {'$eq': dick.name}})
+        assert dick == dick1
+
+        harry = await User.qs(db).find_one(name={'$eq': 'Harry'})
+        assert harry is None
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_find_some():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(required=True, unique=True)
+        gender = StringField(required=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        await User.qs(db).ensure_indices()
+
+        tom = await User.qs(db).create(name='Tom', gender='Male')
+        dick = await User.qs(db).create(name='Dick', gender='Male')
+        harry = await User.qs(db).create(name='Harry', gender='Male')
+        mary = await User.qs(db).create(name='Mary', gender='Female')
+        lucy = await User.qs(db).create(name='Lucy', gender='Female')
+
+        males = [user async for user in User.qs(db).find(gender={'$eq': 'Male'})]
+        assert len(males) == 3
+        assert tom in males
+        assert dick in males
+        assert harry in males
+        females = [user async for user in User.qs(db).find(gender={'$eq': 'Female'})]
+        assert len(females) == 2
+        assert mary in females
+        assert lucy in females
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_find_many():
-    client = AsyncIOMotorClient()
+    client = create_client()
 
     class User(Document):
         name = StringField()
@@ -128,15 +229,17 @@ async def test_find_many():
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_before_hooks():
-    client = AsyncIOMotorClient()
+    client = create_client()
 
     class User(Document):
         name = StringField()
         created = DateTimeField()
         updated = DateTimeField()
 
+
         def before_create(self):
             self.created = self.updated = datetime.utcnow()
+
 
         def before_update(self):
             self.updated = datetime.utcnow()
@@ -144,13 +247,50 @@ async def test_before_hooks():
     db = client.test_motorodm
     await db.drop_collection(User.__collection__)
 
-    user = await User(name='Rob').qs(db).save()
-    assert user.created is not None
-    assert user.updated is not None
-    assert user.created == user.updated
+    try:
+        user = await User(name='Rob').qs(db).save()
+        assert user.created is not None
+        assert user.updated is not None
+        assert user.created == user.updated
 
-    user.name = 'Tom'
-    await user.qs(db).save()
-    assert user.updated > user.created
+        user.name = 'Tom'
+        await user.qs(db).save()
+        assert user.updated > user.created
+    finally:
+        await db.drop_collection(User.__collection__)
 
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_find_referenced():
+    client = create_client()
+
+    class User(Document):
+        primary_email = StringField(db_name='primaryEmail', required=True, unique=True)
+        password = StringField(required=True)
+        secondary_emails = ListField(db_name='secondaryEmails', item_field=StringField())
+        given_names = ListField(db_name='givenNames', item_field=StringField())
+        family_name = StringField(db_name='familyName')
+        nickname = StringField()
+
+    class Permission(Document):
+        user = ReferenceField(reference_document_type=User, required=True, unique=True)
+        roles = ListField(item_field=StringField(), required=True)
+
+    db = client.test_motorodm
     await db.drop_collection(User.__collection__)
+    await db.drop_collection(Permission.__collection__)
+
+    try:
+        rob = await User(primary_email='rob@example.com', password='password').qs(db).save()
+        await Permission(user=rob, roles=['a', 'b', 'c']).qs(db).save()
+        tom = await User(primary_email='tom@example.com', password='password').qs(db).save()
+        await Permission(user=tom, roles=['a', 'b', 'c']).qs(db).save()
+
+        both_permissions = [permission async for permission in Permission.qs(db).find(user={'$in': [rob, tom]})]
+
+        assert len(both_permissions) == 2
+
+    finally:
+        await db.drop_collection(User.__collection__)
+        await db.drop_collection(Permission.__collection__)
