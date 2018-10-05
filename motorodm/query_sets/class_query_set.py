@@ -50,7 +50,7 @@ class ClassQuerySet(object):
     async def ensure_indices(self):
         keys = [
             (
-                self.document_class._db_name_map[field_name],
+                self.document_class._fields[field_name].db_name,
                 self.document_class._fields[field_name].sort_order
             )
             for field_name in self.document_class._indices
