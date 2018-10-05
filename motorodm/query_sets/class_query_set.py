@@ -37,6 +37,10 @@ class ClassQuerySet(object):
         query = self._to_query(**kwargs)
         return DocumentIterator(self.collection.find(query), self.document_class, self.db)
 
+    async def count_documents(self, **kwargs):
+        query = self._to_query(**kwargs)
+        return await self.collection.count_documents(query)
+
     def _to_query(self, **kwargs):
         return {
             self.document_class._fields[name].db_name: self.document_class._fields[name].to_mongo(
