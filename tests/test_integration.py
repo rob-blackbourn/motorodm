@@ -201,6 +201,39 @@ async def test_find_some():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_find_with_and():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(required=True)
+        gender = StringField(required=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        await User.qs(db).ensure_indices()
+
+        male_robin = await User.qs(db).create(name='Robin', gender='Male')
+        female_robin = await User.qs(db).create(name='Robin', gender='Female')
+
+        matches = [user async for user in User.qs(db).find(
+            **{
+                '$and': [
+                    {'name': {'$eq': 'Robin'}},
+                    {'gender': {'$eq': 'Male'}}
+                ]
+            })]
+        assert len(matches) == 1
+        assert male_robin in matches
+        assert female_robin not in matches
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_find_many():
     client = create_client()
 

@@ -53,7 +53,11 @@ class ClassQuerySet(object):
         if isinstance(operation, dict):
             query = {}
             for operator, value in operation.items():
-                if operator in ('$in', '$nin'):
+                if operator in (
+                        '$exists', '$type', '$search', '$language', '$caseSensitive', '$diacriticSensitive', '$size',
+                        '$regex', '$options', '$mod'):
+                    query[operator] = value
+                elif operator in ('$in', '$nin', '$all'):
                     query[operator] = [field.to_mongo(item) for item in value]
                 else:
                     query[operator] = field.to_mongo(value)
@@ -62,11 +66,17 @@ class ClassQuerySet(object):
             return operation
 
 
+    def _to_query_clause(self, key, value):
+        if key in ('$and', '$or', '$nor', '$elemMatch', '$text', '$expr'):
+            return key, [self._to_query(**item) for item in value]
+        elif key in ('$not'):
+            return key, self._to_query(**value)
+        else:
+            return self.document_class._fields[key].db_name, self._to_query_op(self.document_class._fields[key], value)
+
+
     def _to_query(self, **kwargs):
-        return {
-            self.document_class._fields[name].db_name: self._to_query_op(self.document_class._fields[name], operation)
-            for name, operation in kwargs.items()
-        }
+        return dict(self._to_query_clause(k, v) for k, v in kwargs.items())
 
 
     async def drop(self):
