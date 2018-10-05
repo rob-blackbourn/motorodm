@@ -321,7 +321,6 @@ async def test_find_referenced():
         await Permission(user=tom, roles=['a', 'b', 'c']).qs(db).save()
 
         both_permissions = [permission async for permission in Permission.qs(db).find(user={'$in': [rob, tom]})]
-
         assert len(both_permissions) == 2
 
     finally:

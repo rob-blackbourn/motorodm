@@ -28,7 +28,8 @@ class ClassQuerySet(object):
 
     async def get(self, id):
         kwargs = {self.document_class._db_name_map['_id']: {'$eq': id}}
-        return await self.find_one(**kwargs)
+        value = await self.find_one(**kwargs)
+        return value
 
 
     async def find_one(self, **kwargs):
@@ -36,7 +37,8 @@ class ClassQuerySet(object):
         result = await self.collection.find_one(query)
         if not result:
             return None
-        return await self.document_class.from_mongo(result, self.resolve)
+        value = await self.document_class.from_mongo(result, self.resolve)
+        return value
 
 
     def find(self, **kwargs):

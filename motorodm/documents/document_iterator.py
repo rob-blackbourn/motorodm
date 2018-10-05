@@ -39,7 +39,8 @@ class DocumentIterator:
 
 
     async def resolve(self, document_class, value):
-        await document_class.qs(self.db).get(value)
+        value = await document_class.qs(self.db).get(value)
+        return value
 
 
     @property
