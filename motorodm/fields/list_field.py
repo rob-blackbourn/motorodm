@@ -28,7 +28,7 @@ class ListField(Field):
         return value is None or len(value) == 0
 
     def to_mongo(self, value):
-        return list(map(self.item_field.to_mongo, value))
+        return [] if value is None else list(map(self.item_field.to_mongo, value))
 
     async def from_mongo(self, value, resolver=None):
         if value is None:
