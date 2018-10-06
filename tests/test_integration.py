@@ -162,6 +162,35 @@ async def test_find_one():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_find_in():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(required=True, unique=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        await User.qs(db).ensure_indices()
+
+        tom = await User.qs(db).create(name='Tom')
+        dick = await User.qs(db).create(name='Dick')
+        harry = await User.qs(db).create(name='Harry')
+
+        cursor = User.qs(db).find(name={'$in': [tom.name, dick.name]})
+        users = [user async for user in cursor]
+        assert len(users) == 2
+        assert tom in users
+        assert dick in users
+        assert harry not in users
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_find_some():
     client = create_client()
 
@@ -315,6 +344,47 @@ async def test_find_referenced():
         toms_permission = await Permission(user=tom, roles=['a', 'b', 'c']).qs(db).save()
 
         both_permissions = [permission async for permission in Permission.qs(db).find(user={'$in': [rob, tom]})]
+        assert len(both_permissions) == 2
+        assert robs_permission in both_permissions
+        assert toms_permission in both_permissions
+
+    finally:
+        await db.drop_collection(User.__collection__)
+        await db.drop_collection(Permission.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_find_referenced_fake():
+    client = create_client()
+
+    class User(Document):
+        primary_email = StringField(db_name='primaryEmail', required=True, unique=True)
+        password = StringField(required=True)
+        secondary_emails = ListField(db_name='secondaryEmails', item_field=StringField())
+        given_names = ListField(db_name='givenNames', item_field=StringField())
+        family_name = StringField(db_name='familyName')
+        nickname = StringField()
+
+    class Permission(Document):
+        user = ReferenceField(reference_document_type=User, required=True, unique=True)
+        roles = ListField(item_field=StringField(), required=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+    await db.drop_collection(Permission.__collection__)
+
+    try:
+        rob = await User(primary_email='rob@example.com', password='password').qs(db).save()
+        robs_permission = await Permission(user=rob, roles=['a', 'b', 'c']).qs(db).save()
+        tom = await User(primary_email='tom@example.com', password='password').qs(db).save()
+        toms_permission = await Permission(user=tom, roles=['a', 'b', 'c']).qs(db).save()
+
+        fake_users = [
+            User(id=rob._identity),
+            User(id=tom._identity)
+        ]
+        both_permissions = [permission async for permission in Permission.qs(db).find(user={'$in': fake_users})]
         assert len(both_permissions) == 2
         assert robs_permission in both_permissions
         assert toms_permission in both_permissions
