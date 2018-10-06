@@ -44,3 +44,22 @@ The test framework has been integrated with setup.py, so the following also work
 There is a docker compose file which will create an environment suitable for integration tests.
 This assumes mongo is not already running locally (as it uses the default port) and requires docker and docker-compose.
 
+Uploading
+---------
+First change the version number in `mototodm/__init__.py`.
+
+Make sure you have a current version of pip, wheel, setuptools, and twine:
+
+```bash
+(venv) ~/motorodm$ pip install --upgrade pip wheel setuptools twine
+```
+
+To upload to pypi; make the distribution, then upload. You may need to remove any previous distributions.
+
+```bash
+(venv) ~/motorodm$ rm -rf dist
+(venv) ~/motorodm$ python setup.py sdist bdist_wheel
+(venv) ~/motorodm$ twine upload dist/*
+
+```
+
