@@ -1,18 +1,14 @@
 import pytest
 
-import asyncio
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
 from motorodm import (
     Document,
     StringField,
-    ObjectIdField,
     ReferenceField,
     ListField,
     DateTimeField
 )
-
-from tests.utils import run_async
 
 
 def create_client():
@@ -269,10 +265,8 @@ async def test_before_hooks():
         created = DateTimeField()
         updated = DateTimeField()
 
-
         def before_create(self):
             self.created = self.updated = datetime.utcnow()
-
 
         def before_update(self):
             self.updated = datetime.utcnow()
@@ -316,12 +310,14 @@ async def test_find_referenced():
 
     try:
         rob = await User(primary_email='rob@example.com', password='password').qs(db).save()
-        await Permission(user=rob, roles=['a', 'b', 'c']).qs(db).save()
+        robs_permission = await Permission(user=rob, roles=['a', 'b', 'c']).qs(db).save()
         tom = await User(primary_email='tom@example.com', password='password').qs(db).save()
-        await Permission(user=tom, roles=['a', 'b', 'c']).qs(db).save()
+        toms_permission = await Permission(user=tom, roles=['a', 'b', 'c']).qs(db).save()
 
         both_permissions = [permission async for permission in Permission.qs(db).find(user={'$in': [rob, tom]})]
         assert len(both_permissions) == 2
+        assert robs_permission in both_permissions
+        assert toms_permission in both_permissions
 
     finally:
         await db.drop_collection(User.__collection__)
