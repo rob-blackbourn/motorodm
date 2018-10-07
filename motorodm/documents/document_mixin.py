@@ -65,6 +65,14 @@ class EmbeddedDocumentMixin:
                 return False
         return True
 
+    def __repr__(self):
+        name = self.__class__.__name__
+        args = ','.join([
+            name + '=' + repr(getattr(self, name, None))
+            for name, field in self._fields.items()])
+        return f"{name}({args})"
+        # return str(self.to_dict())
+
 
 class DocumentMixin(EmbeddedDocumentMixin):
 
