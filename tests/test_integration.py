@@ -104,6 +104,61 @@ async def test_list_reference_field():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_unique_index():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(required=True, unique=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        await User.qs(db).ensure_indices()
+
+        await User.qs(db).create(name='Tom')
+        await User.qs(db).create(name='Dick')
+
+        try:
+            await User.qs(db).create(name='Tom')
+            assert False
+        except:
+            assert True
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_unique_compound_index():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(required=True, unique=True)
+        gender = StringField(required=True, unique=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        await User.qs(db).ensure_indices()
+
+        await User.qs(db).create(name='Robin', gender='Male')
+        await User.qs(db).create(name='Robin', gender='Female')
+
+        try:
+            await User.qs(db).create(name='Robin', gender='Male')
+            assert False
+        except:
+            assert True
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get():
     client = create_client()
 
