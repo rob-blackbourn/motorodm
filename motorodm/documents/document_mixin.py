@@ -19,8 +19,8 @@ class EmbeddedDocumentMixin:
                 data[field.db_name] = value
         return data
 
-    def to_dict(self):
-        dct = {}
+    def to_dict(self, cls=dict):
+        dct = cls()
         for name, field in self._fields.items():
             dct[name] = getattr(self, name, None)
         return dct
