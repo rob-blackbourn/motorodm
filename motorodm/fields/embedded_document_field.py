@@ -1,11 +1,18 @@
 from .field import Field
+from ..utils.types import is_callable
 
 
 class EmbeddedDocumentField(Field):
 
     def __init__(self, embedded_document_type=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.embedded_document_type = embedded_document_type
+        self._embedded_document_type = embedded_document_type
+
+    @property
+    def embedded_document_type(self):
+        if is_callable(self._embedded_document_type):
+            self._embedded_document_type = self._embedded_document_type()
+        return self._embedded_document_type
 
     def validate(self, value):
         if value is not None:

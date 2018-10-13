@@ -48,3 +48,31 @@ async def test_json_field():
 
     doc1 = await MyDocument.from_mongo(dct, resolve)
     assert doc == doc1
+
+
+def test_reference_field():
+    class Address(motorodm.Document):
+        city = motorodm.StringField()
+
+    class Person(motorodm.Document):
+        name = motorodm.StringField()
+        address = motorodm.ReferenceField(reference_document_type=Address)
+
+    address = Address(city='London')
+    person = Person(name='Rob', address=address)
+
+    assert person.address.city == 'London'
+    assert person.is_valid
+
+
+def test_recursive_reference_field():
+    class Person(motorodm.Document):
+        name = motorodm.StringField(required=True, unique=True)
+        parent = motorodm.ReferenceField(reference_document_type=lambda: Person)
+
+    grandparent = Person(name='grandparent')
+    parent = Person(name='parent', parent=grandparent)
+    child = Person(name='child', parent=parent)
+
+    assert child.parent.parent.name == 'grandparent'
+    assert child.is_valid
