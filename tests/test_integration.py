@@ -13,6 +13,8 @@ from motorodm import (
 
 def create_client():
     return AsyncIOMotorClient(
+        host='localhost',
+        port=30000,
         username="root",
         password="password",
         authSource="admin"
@@ -349,8 +351,10 @@ async def test_before_hooks():
         created = DateTimeField()
         updated = DateTimeField()
 
+
         def before_create(self):
             self.created = self.updated = datetime.utcnow()
+
 
         def before_update(self):
             self.updated = datetime.utcnow()
@@ -447,3 +451,52 @@ async def test_find_referenced_fake():
     finally:
         await db.drop_collection(User.__collection__)
         await db.drop_collection(Permission.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_distinct():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(db_name='primaryEmail', required=True, unique=True)
+        gender = StringField(required=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        rob_male = await User(name='rob', gender='male').qs(db).save()
+        rob_female = await User(name='rob', gender='female').qs(db).save()
+        tom_male = await User(name='tom', gender='male').qs(db).save()
+        tom_female = await User(name='tom', gender='female').qs(db).save()
+
+        cursor = User.qs(db).find()
+        results = await cursor.distinct('gender')
+        assert set(results) == {'male', 'female'}
+
+    finally:
+        await db.drop_collection(User.__collection__)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_skip_and_limit():
+    client = create_client()
+
+    class User(Document):
+        name = StringField(db_name='primaryEmail', required=True, unique=True)
+
+    db = client.test_motorodm
+    await db.drop_collection(User.__collection__)
+
+    try:
+        for i in range(100):
+            await User(name=f'user{i}').qs(db).save()
+
+        cursor = User.qs(db).find().skip(10).limit(10)
+        results = [user async for user in cursor]
+        assert len(results) == 10
+
+    finally:
+        await db.drop_collection(User.__collection__)

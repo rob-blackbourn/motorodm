@@ -1,3 +1,6 @@
+import pymongo
+
+
 class DocumentIterator:
 
     def __init__(self, cursor, document_class, db):
@@ -18,20 +21,23 @@ class DocumentIterator:
             raise StopAsyncIteration
 
 
-    async def distinct(self):
-        return await self.cursor.distinct()
+    async def distinct(self, key):
+        return await self.cursor.distinct(key)
 
 
     def limit(self, n):
         self.cursor.limit(n)
+        return self
 
 
     def skip(self, n):
         self.cursor.skip(n)
+        return self
 
 
-    def sort(self, key_or_list, direction=None):
+    def sort(self, key_or_list, direction=pymongo.ASCENDING):
         self.cursor.sort(key_or_list, direction)
+        return self
 
 
     async def to_list(self, length):

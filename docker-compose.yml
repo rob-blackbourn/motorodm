@@ -6,25 +6,10 @@ services:
     image: mongo:4.0.2-xenial
     restart: always
     ports:
-    - 27017:27017
+    - 30000:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: test_motorodm
-    volumes:
-    - ./docker-init-mongo:/docker-entrypoint-initdb.d/
-
-
-  mongo-express:
-    image: mongo-express:0.49.0
-    depends_on:
-    - mongo
-    restart: always
-    ports:
-    - 9001:8081
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
 
 # docker-compose up
-# mongo --username root --password password --authenticationDatabase admin test_motorodm
+# mongo --username root --password password --authenticationDatabase admin
