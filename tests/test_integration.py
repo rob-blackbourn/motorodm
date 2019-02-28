@@ -14,7 +14,7 @@ from motorodm import (
 def create_client():
     return AsyncIOMotorClient(
         host='localhost',
-        port=30000,
+        port=27017,
         username="root",
         password="password",
         authSource="admin"
