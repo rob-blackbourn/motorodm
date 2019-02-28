@@ -34,7 +34,7 @@ setup(
     url='https://github.com/rob-blackbourn/motorodm/',
     license='Apache 2',
     keywords='motor odm mongo',
-    packages=find_packages(exclude=['tests', 'examples']),
+    packages=find_packages(where='src', exclude=['tests', 'examples']),
     python_requires='~=3.6',
     install_requires=requirements,
     setup_requires=['pytest-runner'],
